@@ -1,3 +1,3 @@
 ﻿# gestor_financeiro
 
-## Mini app para gestão pessoal de gastos.
+Mini app para gestão pessoal de gastos.
