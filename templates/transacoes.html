@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+{% block content %}
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-danger" role="alert">
+  {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+<div class="header-content">
+  <div class="row">
+    <!-- Titulo da paguna -->
+    <div class="d-flex justify-content-between">
+      <h1 class="title">{{titulo_pagina}}</h1>
+      <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+        data-bs-target="#modal_adicionar_transacao">+
+        Transacao</button>
+    </div>
+    <!-- Tabela de dados -->
+    <div class="row">
+      <table class="table table-dark table-sm display" id="tabela_transacoes">
+        <thead>
+          <tr>
+            <th>Id</th>
+            <th>Descrição</th>
+            <th>Conta Id</th>
+            <th>Conta</th>
+            <th>Tipo</th>
+            <th>Data do Evento</th>
+            <th>Data do Execução</th>
+            <th>Valor</th>
+            <th>Acumulado</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set ns = namespace(nome_botao_editar='') %}
+          {% if transacoes %}
+          {% for transacao in transacoes %}
+          {% set ns.nome_botao_editar = 'botao_editar_' + transacao.id|string %}
+          <tr>
+            <td>{{ transacao.id }}</td>
+            <td>{{ transacao.descricao }}</td>
+            <td>{{ transacao.conta.id }}</td>
+            <td>{{ transacao.conta.nome }}</td>
+            <td>{{ transacao.tipo.value }}</td>
+            <td>{{ transacao.data_evento|format_date }}</td>
+            <td>{{ transacao.data_execucao|format_date }}</td>
+            <td>{{ transacao.valor|format_currency }}</td>
+            <td>{{ transacao.acumulado|format_currency }}</td>
+            <td><div class="d-flex" style="min-width: 140px;">
+              <form action="{{ url_for('excluir_transacao', transacao_id=transacao.id) }}" method=post>
+                <input type=submit class="btn btn-danger btn-sm mr-2" value="Excluir">
+              </form>
+              <button
+                id ="{{ ns.nome_botao_editar }}"
+                type="button"
+                class="btn btn-secondary btn-sm"
+                data-bs-toggle="modal"
+                data-bs-target="#modal_editar_transacao" 
+                data-transaction-id="{{ transacao.id }}"
+                data-transaction-descricao="{{ transacao.descricao }}"
+                data-transaction-conta-id="{{ transacao.conta.id }}"
+                data-transaction-tipo="{{ transacao.tipo.name }}"
+                data-transaction-data-evento="{{ transacao.data_evento }}"
+                data-transaction-data-execucao="{{ transacao.data_execucao }}"
+                data-transaction-valor="{{ transacao.valor|float }}"
+                onclick="populateForm(this)">
+                Editar
+              </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Modal adicionar formulário transacao -->
+    <div class="modal" tabindex="-1" id="modal_adicionar_transacao">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-dark text-white">
+            <h5 class="modal-title">Adicionar nova transação</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form method="POST" action="{{ url_for('adicionar_transacao') }}">
+            <div class="modal-body bg-dark text-white">
+              <!-- formulário -->
+              <div class="form-group">
+                <label for="transacao_tipo" class="text-secondary">Tipo de transação</label>
+                <select class="form-control  text-white bg-dark" id="transacao_tipo" name="transacao_tipo">
+                  {% for tipo_transacao in tipos_transacao %}
+                  <option value="{{tipo_transacao.name}}">{{tipo_transacao.value}}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="transacao_descricao" class="text-secondary">Descrição</label>
+                <input type="text" class="form-control  text-white bg-dark" id="transacao_descricao"
+                  name="transacao_descricao" required>
+              </div>
+              <div class="form-group">
+                <label for="transacao_valor" class="text-secondary">Valor</label>
+                <input type="number" step="0.01" class="form-control  text-white bg-dark" id="transacao_valor"
+                  name="transacao_valor" required>
+              </div>
+              <div class="form-group">
+                <label for="transacao_data_evento" class="text-secondary">Data do evento</label>
+                <input type="datetime-local" class="form-control  text-white bg-dark" id="transacao_data_evento"
+                  name="transacao_data_evento" required>
+              </div>
+              <div class="form-group">
+                <label for="transacao_data_execucao" class="text-secondary">Data de realização</label>
+                <input type="datetime-local" class="form-control text-white bg-dark" id="transacao_data_execucao"
+                  name="transacao_data_execucao" required>
+              </div>
+              <div class="form-group">
+                <label for="transacao_conta" class="text-secondary">Conta</label>
+                <select class="form-control text-white bg-dark" id="transacao_conta" name="transacao_conta" required>
+                  {% for conta in contas %}
+                  <option value="{{ conta.id }}">{{ conta.nome }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="transacao_quantidade_meses" class="text-secondary">Repetir em varios meses </label>
+                <input type="number" min="1" value="1" step="1" class="form-control text-white bg-dark"
+                  id="transacao_quantidade_meses" name="transacao_quantidade_meses" placeholder="Quantidade de meses"
+                  required>
+              </div>
+            </div>
+            <div class="modal-footer bg-dark text-white">
+              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
+              <button type="submit" class="btn btn-primary btn-sm">Adicionar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Modal Editar formulário transacao -->
+    <div class="modal" tabindex="-1" id="modal_editar_transacao">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-dark text-white">
+            <h5 class="modal-title">Editar transacao</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form method="POST" action="{{ url_for('editar_transacao')  }}">
+            <div class="modal-body bg-dark text-white">
+              <!-- formulário -->
+              <div class="form-group">
+                <input type="hidden" class="form-control  text-white bg-dark" id="editar_transacao_id" name="editar_transacao_id" required>
+              </div>
+              <div class="form-group">
+                <label for="editar_transacao_tipo" class="text-secondary">Tipo de transação</label>
+                <select class="form-control  text-white bg-dark" id="editar_transacao_tipo" name="editar_transacao_tipo">
+                  {% for tipo_transacao in tipos_transacao %}
+                  <option value="{{tipo_transacao.name}}">{{tipo_transacao.value}}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="editar_transacao_descricao" class="text-secondary">Descrição</label>
+                <input type="text" class="form-control  text-white bg-dark" id="editar_transacao_descricao"
+                  name="editar_transacao_descricao" required>
+              </div>
+              <div class="form-group">
+                <label for="editar_transacao_valor" class="text-secondary">Valor</label>
+                <input type="number" step="0.01" class="form-control  text-white bg-dark" id="editar_transacao_valor"
+                  name="editar_transacao_valor" required>
+              </div>
+              <div class="form-group">
+                <label for="editar_transacao_data_evento" class="text-secondary">Data do evento</label>
+                <input type="datetime-local" class="form-control  text-white bg-dark" id="editar_transacao_data_evento"
+                  name="editar_transacao_data_evento" required>
+              </div>
+              <div class="form-group">
+                <label for="editar_transacao_data_execucao" class="text-secondary">Data de realização</label>
+                <input type="datetime-local" class="form-control text-white bg-dark" id="editar_transacao_data_execucao"
+                  name="editar_transacao_data_execucao" required>
+              </div>
+              <div class="form-group">
+                <label for="editar_transacao_conta" class="text-secondary">Conta</label>
+                <select class="form-control text-white bg-dark" id="editar_transacao_conta" name="editar_transacao_conta" required>
+                  {% for conta in contas %}
+                  <option value="{{ conta.id }}">{{ conta.nome }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="editar_transacao_quantidade_meses" class="text-secondary">Repetir em varios meses </label>
+                <input type="number" min="1" value="1" step="1" class="form-control text-white bg-dark"
+                  id="editar_transacao_quantidade_meses" name="editar_transacao_quantidade_meses" placeholder="Quantidade de meses"
+                  required>
+                  <label for="editar_transacao_quantidade_meses" class="text-secondary">O numero digitado acima, não editará as outras ocorrencias desta transação, simplemente adicionará novas identicas a esta.</label>
+              </div>
+            </div>
+            <div class="modal-footer bg-dark text-white">
+              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
+              <button type="submit" class="btn btn-primary btn-sm">Editar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+  {% endblock %}

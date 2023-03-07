@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div id="modal-error" class="modal">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <p> Nome de conta já existente, por favor escolha outro nome</p>
+    </div>
+</div>
+
+<div class="header-content">
+    <h1 class="title">{{titulo_pagina}}</h1>
+<div class="table-responsive">
+<table  class="table table-striped table-dark table-sm">
+    <thead>
+        <tr>
+            <th>Mês</th>
+            <th>Parte do Mês</th>
+            <th>Conta</th>
+            <th>Entrada</th>
+            <th>Saida</th>
+            <th>Saldo</th>
+            <th>Acumulado</th>
+            <th>Ação</th>
+        </tr>
+    </thead>
+    <tbody>
+            {% set ns = namespace(usou_mes=false, usou_parte_mes=false, nome_botao = '', nome_tabela_transacao = '') %}
+            {% for mes_chave, parte_mes in resumo.items() %}
+                {% for parte_mes_chave, conta in parte_mes.items() %}
+                    {% for conta_chave, transacoes in conta.items() %}
+                        <tr>
+                            {% if ns.usou_mes == false %}
+                                <td class="align-middle" rowspan="{{mes_chave.quantidade_descendentes}}">{{mes_chave.nome|format_date('%b/%Y')}}</td>
+                                {% set ns.usou_mes = true %}
+                            {% endif %}
+                            {% if ns.usou_parte_mes == false %}
+                                <td class="align-middle"  rowspan="{{parte_mes_chave.quantidade_descendentes}}">{{parte_mes_chave.nome}}</td>
+                                {% set ns.usou_parte_mes = true %}
+                            {% endif %}
+                            <td>{{conta_chave.nome}}</td>
+                            <td>{{conta_chave.soma_entrada|float_reais}}</td>
+                            <td>{{conta_chave.soma_saida|float_reais}}</td>
+
+
+                            {% if conta_chave.soma_saldo >= 0.1 %}
+                                <td class="text-success">{{conta_chave.soma_saldo|float_reais}}</td>
+                            {% else %}
+                                <td class="text-danger">{{conta_chave.soma_saldo|float_reais}}</td>
+                            {% endif %}
+
+                            {% if conta_chave.acumulado >= 0.1 %}
+                                <td class="text-success">{{conta_chave.acumulado|float_reais}}</td>
+                            {% else %}
+                                <td class="text-danger">{{conta_chave.acumulado|float_reais}}</td>
+                            {% endif %}                       
+                            
+
+                            {% set ns.nome_botao = 'botao_' + conta_chave.nome|replace(' ','_') + parte_mes_chave.nome|replace(' ','_') + mes_chave.nome|format_date('%b/%Y')|replace(' ','_')  %}
+                            {% set ns.nome_tabela_transacao =  'tabela_' + conta_chave.nome|replace(' ','_') + parte_mes_chave.nome|replace(' ','_') + mes_chave.nome|format_date('%b/%Y')|replace(' ','_') %}
+                            <td>
+                                <button  type="submit"  id="{{ns.nome_botao}}" class="btn btn-info btn-sm" onclick="toggleTable('{{ns.nome_tabela_transacao}}','{{ns.nome_botao}}')" >+</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="7">
+                                <div class="table-responsive">
+                                <table class="table table-hover table-borderless table-sm"  style="display:none;" id="{{ns.nome_tabela_transacao}}">
+                                <thead>
+                                    <tr>
+                                        <th>Descrição</th>
+                                        <th>Data Evento</th>
+                                        <th>Data Execucao</th>
+                                        <th>Tipo</th>
+                                        <th>Valor</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="table-group-divider">
+                                    {% for transacao in transacoes %}
+
+                                        {% if transacao['tipo'].name == 'ENTRADA' %}
+                                            <tr>
+                                                <td style="background-color: var(--bs-success-text); color: var(--bs-body-bg);">{{transacao['descricao']}}</td>
+                                                <td style="background-color: var(--bs-success-text); color: var(--bs-body-bg);">{{transacao['data_evento']|format_date}}</td>
+                                                <td style="background-color: var(--bs-success-text); color: var(--bs-body-bg);">{{transacao['data_execucao']|format_date}}</td>
+                                                <td style="background-color: var(--bs-success-text); color: var(--bs-body-bg);">{{transacao['tipo'].value}}</td>
+                                                <td style="background-color: var(--bs-success-text); color: var(--bs-body-bg);">{{transacao['valor']|float_reais}}</td>
+                                            </tr>
+                                        {% elif transacao['tipo'].name == 'SAIDA'%}
+                                            <tr>
+                                                <td style="background-color: var(--bs-danger-text); color: var(--bs-body-bg);">{{transacao['descricao']}}</td>
+                                                <td style="background-color: var(--bs-danger-text); color: var(--bs-body-bg);">{{transacao['data_evento']|format_date}}</td>
+                                                <td style="background-color: var(--bs-danger-text); color: var(--bs-body-bg);">{{transacao['data_execucao']|format_date}}</td>
+                                                <td style="background-color: var(--bs-danger-text); color: var(--bs-body-bg);">{{transacao['tipo'].value}}</td>
+                                                <td style="background-color: var(--bs-danger-text); color: var(--bs-body-bg);">{{transacao['valor']|float_reais}}</td>
+                                            </tr>
+                                        {% endif %}
+
+                                    {% endfor %}
+                                </tbody>
+                                </table>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    {% set ns.usou_parte_mes = false %}
+                {% endfor %}
+                {% set ns.usou_mes = false %}
+            {% endfor %}
+    </tbody>
+</table>
+</div>
+
+</div>
+
+{% endblock %}
